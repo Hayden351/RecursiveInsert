@@ -62,9 +62,14 @@ public class CreateTestTables
         {
             StringBuilder result = new StringBuilder();
             int ch;
+            boolean inQuotes = false;
             while ((ch = in.read()) != -1)
             {
-                if (';' == ch) 
+                // TODO: what happens if we have quote characters inside our strings?
+                //       the standard seems to be that '' is an escaped '
+                if ('\'' == ch) inQuotes = !inQuotes;
+                
+                if (!inQuotes && ';' == ch) 
                 { System.out.printf("{####{%s}####}\n", result.toString().trim()); connection.prepareStatement(result.toString()).execute(); result = new StringBuilder(); }
                 else result.append((char)ch);
             }

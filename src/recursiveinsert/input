@@ -1,7 +1,10 @@
 
 drop table referencing_table;
+drop table many_to_many_to_source_table_xref;
 drop table source_table;
 drop table referenced_table;
+drop table many_to_many;
+
 
 create
         table referenced_table
@@ -23,6 +26,18 @@ create
             source_table_id integer references source_table(source_table_id),
             data varchar(32) 
         );
+create
+    table many_to_many
+    (
+        many_to_many_id serial primary key,
+        data varchar(32)
+    );
+create
+    table many_to_many_to_source_table_xref
+    (
+        many_to_many_id integer references many_to_many(many_to_many_id),
+        source_table_id integer references source_table(source_table_id)
+    );
     
     INSERT INTO REFERENCED_TABLE (data) VALUES ('data1');
     INSERT INTO REFERENCED_TABLE (data) VALUES ('data2');
@@ -30,8 +45,22 @@ create
     INSERT INTO REFERENCED_TABLE (data) VALUES ('data4');
 
     INSERT INTO SOURCE_TABLE (referenced_table_id,data) VALUES (4,'asdf');
-    INSERT INTO SOURCE_TABLE (referenced_table_id,data) VALUES (2,'sdfg');
-    INSERT INTO SOURCE_TABLE (referenced_table_id,data) VALUES (4,'sdfg');
+    INSERT INTO SOURCE_TABLE (referenced_table_id,data) VALUES (2,'sdf;g');
+    INSERT INTO SOURCE_TABLE (referenced_table_id,data) VALUES (4,'s;dfg');
 
     insert into referencing_table(data, source_table_id) values('data1', 3);
     insert into referencing_table(data, source_table_id) values('data2', 1);
+
+
+INSERT INTO many_to_many (data) VALUES ('lorem');
+
+INSERT INTO many_to_many (data) VALUES ('ipsum');
+
+INSERT INTO many_to_many (data) VALUES ('lorem ipsum');
+
+INSERT INTO many_to_many (data) VALUES ('ipsum lorem');
+
+INSERT INTO many_to_many_to_source_table_xref (many_to_many_id,source_table_id) VALUES (2, 3);
+INSERT INTO many_to_many_to_source_table_xref (many_to_many_id,source_table_id) VALUES (1, 3);
+INSERT INTO many_to_many_to_source_table_xref (many_to_many_id,source_table_id) VALUES (4, 2);
+INSERT INTO many_to_many_to_source_table_xref (many_to_many_id,source_table_id) VALUES (1, 2);

@@ -116,6 +116,8 @@ public class RecursiveInsert
     For thorough test we want 1-1, 1=*, *-1 and *-* relationships
     
     */
+    public static Scanner in = new Scanner(System.in);
+    
     public static void main(String[] args) throws SQLException
     {
         String foreignKeysSql =
@@ -148,7 +150,7 @@ public class RecursiveInsert
         
         foreignKeyReferences.forEach(System.out::println);
         
-        Scanner in = new Scanner(System.in);
+        
         
         String initialTable = "source_table";
         
@@ -165,8 +167,36 @@ public class RecursiveInsert
     
     public static void traverse(String table, String tableId, int id, List<ForeignKeyReference> foreignKeyReferences, Set<String> visited) throws SQLException
     {
+        // TODO: If we havent decided to move to the current element we shouldn't
+        /*
+        inserts need to happen with
+        referenced first then the table
+        then the referencers
+        
+        but we want to ask the user whether they want to clone or not before even going to the referenced tables
+        
+        */
+        
         // we just visited the current table
         visited.add(table);
+        System.out.printf("Do you want to clone the corresponding rows in table %s?\n", table);
+        try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:54321/postgres?user=DarkFight753");)
+        {
+            String sql = String.format("select * from %s where %s = %s", table, tableId, id);
+            
+            ResultSet rs = conn.prepareStatement(sql).executeQuery();
+            
+            //TODO: what if there are multiples?
+            //      put it into a list and if 1 then a one to many else a one to one
+            //      what if is a one to many but there is only one? does it make a difference?
+            while (rs.next())
+            {
+                System.out.println("    "+resultSetToMap(rs));
+            }
+        }
+        
+        
+        
         // traverse the tables that the current table references first
         // TODO: would it be better if I abstracted the references and referencers into some common code then just match up the parameters as needed?
         for (ForeignKeyReference reference : foreignKeyReferences)
@@ -193,20 +223,7 @@ public class RecursiveInsert
                 }
         // evaluate the current table
         System.out.println(table);
-        try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:54321/postgres?user=DarkFight753");)
-        {
-            String sql = String.format("select * from %s where %s = %s", table, tableId, id);
-            
-            ResultSet rs = conn.prepareStatement(sql).executeQuery();
-            
-            //TODO: what if there are multiples?
-            //      put it into a list and if 1 then a one to many else a one to one
-            //      what if is a one to many but there is only one? does it make a difference?
-            if (rs.next())
-            {
-                System.out.println(resultSetToMap(rs));
-            }
-        }
+        
         
         // evaluate tables that reference the current table
         for (ForeignKeyReference reference : foreignKeyReferences)
@@ -216,41 +233,42 @@ public class RecursiveInsert
                 {
                     try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:54321/postgres?user=DarkFight753");)
                     {
-                        // get the column that is a primary key on the referencing table
-                        String getPrimaryKeyOnReferencingTable =
-                            "SELECT kcu.column_name " +
-                            "    FROM information_schema.table_constraints tc " +
-                            "         join information_schema.key_column_usage kcu " +
-                            "         on (tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema) " +
-                            "    WHERE 'referencing_table' = tc.table_name " +
-                            "      and constraint_type = 'PRIMARY KEY' ";
-                        ResultSet primaryKeyResult = conn.prepareStatement(getPrimaryKeyOnReferencingTable).executeQuery();
+//                        // get the column that is a primary key on the referencing table
+//                        String getPrimaryKeyOnReferencingTable =
+//                            "SELECT kcu.column_name " +
+//                            "    FROM information_schema.table_constraints tc " +
+//                            "         join information_schema.key_column_usage kcu " +
+//                            "         on (tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema) " +
+//                            "    WHERE 'referencing_table' = tc.table_name " +
+//                            "      and constraint_type = 'PRIMARY KEY' ";
+//                        ResultSet primaryKeyResult = conn.prepareStatement(getPrimaryKeyOnReferencingTable).executeQuery();
+//                        
+//                        String primaryId;
+//                        
+//                        if (primaryKeyResult.next())
+//                        {
+//                             primaryId = primaryKeyResult.getString("column_name");
+//                        }
+//                        else throw new IllegalArgumentException("Either the query has some error or we have a table without a primary key. Which is totally possible but just a little bit weird.");
+//                        
+//                        
+//                        // TODO: we need to find the primary key of the table to select
+//                        //       but wait, what if there is more than one? Did I accidently resolve this todo?
+//                        // TODO: what if there are multiple columns that define the primary key
+//                        String sql = String.format("select %s as primaryId from %s where %s = %s", primaryId, reference.tableName, reference.tableId, id);
+//                        System.out.println(sql);
+//                        ResultSet rs = conn.prepareStatement(sql).executeQuery();
+//                        
+//                        // TODO: can there be multiples? If yes than wat do?
+//                        if (rs.next())
+//                        {
+//                            // TODO: all that work to get this id while interesting turned out to be a waste of time
+//                            //       I want to capture all the knowledge that went into getting this value but need to
+//                            //       remove it from this code because this code is sufficiently complex as is
+//                            int foreignTableId = rs.getInt(1);
+//                        }
                         
-                        String primaryId;
-                        
-                        if (primaryKeyResult.next())
-                        {
-                             primaryId = primaryKeyResult.getString("column_name");
-                        }
-                        else throw new IllegalArgumentException("Either the query has some error or we have a table without a primary key. Which is totally possible but just a little bit weird.");
-                        
-                        
-                        // TODO: we need to find the primary key of the table to select
-                        //       but wait, what if there is more than one? Did I accidently resolve this todo?
-                        // TODO: what if there are multiple columns that define the primary key
-                        String sql = String.format("select %s as primaryId from %s where %s = %s", primaryId, reference.tableName, reference.tableId, id);
-                        System.out.println(sql);
-                        ResultSet rs = conn.prepareStatement(sql).executeQuery();
-                        
-                        // TODO: can there be multiples? If yes than wat do?
-                        if (rs.next())
-                        {
-                            // TODO: all that work to get this id while interesting turned out to be a waste of time
-                            //       I want to capture all the knowledge that went into getting this value but need to
-                            //       remove it from this code because this code is sufficiently complex as is
-                            int foreignTableId = rs.getInt(1);
-                            traverse(reference.tableName, reference.tableId, id, foreignKeyReferences, visited);
-                        }
+                        traverse(reference.tableName, reference.tableId, id, foreignKeyReferences, visited);
                     }
                 }
     }
