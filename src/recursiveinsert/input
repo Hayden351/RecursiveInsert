@@ -1,0 +1,37 @@
+
+drop table referencing_table;
+drop table source_table;
+drop table referenced_table;
+
+create
+        table referenced_table
+        (
+            referenced_table_id serial primary key,
+            data varchar(32)
+        );
+    create
+        table source_table
+        (
+            source_table_id serial primary key,
+            referenced_table_id integer references referenced_table(referenced_table_id),
+            data varchar(32) 
+        );
+    create
+        table referencing_table
+        (
+            referencing_table_id serial primary key,
+            source_table_id integer references source_table(source_table_id),
+            data varchar(32) 
+        );
+    
+    INSERT INTO REFERENCED_TABLE (data) VALUES ('data1');
+    INSERT INTO REFERENCED_TABLE (data) VALUES ('data2');
+    INSERT INTO REFERENCED_TABLE (data) VALUES ('data3');
+    INSERT INTO REFERENCED_TABLE (data) VALUES ('data4');
+
+    INSERT INTO SOURCE_TABLE (referenced_table_id,data) VALUES (4,'asdf');
+    INSERT INTO SOURCE_TABLE (referenced_table_id,data) VALUES (2,'sdfg');
+    INSERT INTO SOURCE_TABLE (referenced_table_id,data) VALUES (4,'sdfg');
+
+    insert into referencing_table(data, source_table_id) values('data1', 3);
+    insert into referencing_table(data, source_table_id) values('data2', 1);
